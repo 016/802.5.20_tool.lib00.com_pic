@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片上传和处理</title>
+    <link href="./bootstrap.min.v5.3.5.css" rel="stylesheet"
+          integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    <style>
+        body {
+            background: #f8f8f8;
+            font-family: 'Open Sans', sans-serif;
+            color: #888;
+            font-size: 0.875rem;
+            font-weight: 400;
+        }
+        #canvas-container {
+            border: 1px solid #ccc;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #canvas {
+            position: absolute;
+            cursor: grab;
+        }
+    </style>
+</head>
+<body>
+<div id="app" class="container mt-4">
+
+    <main>
+
+        <div class="py-3 container text-center1">
+
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="https://dpit.lib00.com" target="_blank">dpit.lib00.com</a></li>
+                    <li class="breadcrumb-item"><a href="https://tool.lib00.com" target="_blank">DP工具箱/DP Tool</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">图片在线编辑工具/Online Pic Edit</li>
+                </ol>
+            </nav>
+
+            <div class="row">
+                <div class="col-12 text-center">
+                    <h1 class="text-body">图片在线编辑工具/Online Pic Edit</h1>
+                    <p>选择图片，设置参数，拖动选取，下载图片/Select the image, set parameters, drag to select, download the image</p>
+
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-6">
+                    <div class="accordion accordion-flush mb-5 ee-shadow-both border-1" id="video-index-search-box">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#video-index-search-box-open" aria-expanded="true" aria-controls="video-index-search-box-open">
+                                    设置参数/Setting
+                                </button>
+                            </h2>
+                            <div id="video-index-search-box-open" class="accordion-collapse collapse show" data-bs-parent="#video-index-search-box" style="">
+                                <div class="accordion-body">
+                                    <div class="row">
+
+                                        <div class="col-md-12 mb-3">
+                                            <!-- 图片选择部分 -->
+                                            <label for="image-upload" class="form-label">1. 选择图片/Select Pic</label>
+                                            <input type="file" id="image-upload" @change="onImageChange" accept="image/*" class="form-control"/>
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+                                            <!-- 默认宽高选择部分 -->
+                                            <label for="preset-select" class="form-label">2.1 选择默认宽高/Default Width + Hight</label>
+                                            <select id="preset-select" class="form-select" v-model="selectedPreset" @change="changePreset">
+                                                <option v-for="preset in presets" :key="preset.name" :value="preset">{{ preset.name }}</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+                                            <!-- 宽度和高度输入部分 -->
+                                            <label for="image-width" class="form-label">2.2 宽度/Width (px)</label>
+                                            <div class=" input-group">
+                                                <input type="number" id="image-width" v-model="width" class="form-control"/>
+                                                <span class="input-group-text">px</span>
+                                            </div>
+
+                                            <label for="image-height" class="form-label">2.3 高度/Hight (px)</label>
+                                            <div class=" input-group">
+                                                <input type="number" id="image-height" v-model="height" class="form-control"/>
+                                                <span class="input-group-text">px</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+                                            <!-- 放大/缩小选择部分 -->
+                                            <label for="resize-select" class="form-label">3. 放大/缩小/Resize</label>
+                                            <div class="input-group mb-3">
+                                                <input id="resize-select" type="number" v-model="resizeValue" class="form-control" placeholder="输入数值"/>
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <small class="form-text">根据选择的放大/缩小比例调整图片的显示尺寸。</small>
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+                                            <!-- 下载图片名称部分 -->
+                                            <label for="image-name" class="form-label">4. 保存名称/Save Name</label>
+                                            <div class=" input-group">
+                                                <input type="text" id="image-name" v-model="downloadName" class="form-control" placeholder="输入下载图片名称"/>
+                                                <select v-model="imageFormat" class="form-select">
+                                                    <option value="jpg">.jpg</option>
+                                                    <option value="png">.png</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+
+                                        </div>
+                                        <div class="d-grid gap-2  col-6 mx-auto">
+                                            <!-- 下载按钮 -->
+                                            <button class="btn btn-primary mt-3" @click="downloadImage">下载图片/Download Pic</button>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="alert alert-primary" role="alert">
+                        拖动 + 预览/Drag + Preview
+                    </div>
+                    <!-- Canvas容器 -->
+                    <div id="canvas-container" :style="{ width: width + 'px', height: height + 'px' }" @mousedown="startDrag"
+                         @mouseup="endDrag" @mousemove="drag">
+                        <canvas id="canvas" ref="canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="./vue.global.v3.5.13.js"></script>
+<script>
+    const app = Vue.createApp({
+        data() {
+            return {
+                image: null,
+                width: 200,
+                height: 200,
+                resizeValue: 100, // 新增的放大/缩小比例，默认为100%
+                downloadName: 'dpit_' + Math.floor(1000 + Math.random() * 9000),
+                imageFormat: 'jpg', // 默认格式为jpg
+                dragging: false,
+                dragStart: {x: 0, y: 0},
+                offset: {x: 0, y: 0},
+                selectedPreset: {name: 'Moonlight-528x704-png', width: 528, height: 704, format:'png'},
+                presets: [
+                    {name: 'Moonlight-528x704-png', width: 528, height: 704, format:'png'},
+                    {name: 'Pic_B-150x300-jpg', width: 150, height: 300, format:'jpg'}
+                ]
+            };
+        },
+        methods: {
+            onImageChange(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    this.image = URL.createObjectURL(file);
+                    this.drawCanvas();
+                }
+            },
+            changePreset() {
+                console.log('ee1');
+                console.log(this.selectedPreset);
+                this.width = this.selectedPreset.width;
+                this.height = this.selectedPreset.height;
+                this.imageFormat = this.selectedPreset.format;
+                this.drawCanvas();
+            },
+            drawCanvas() {
+                const canvas = this.$refs.canvas;
+                const ctx = canvas.getContext('2d');
+                const scale = this.resizeValue / 100; // 根据输入的比例计算缩放因子
+
+                canvas.width = this.width;
+                canvas.height = this.height;
+                const img = new Image();
+                img.src = this.image;
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    const scaledWidth = img.width * scale; // 计算缩放后的宽度
+                    const scaledHeight = img.height * scale; // 计算缩放后的高度
+
+                    ctx.drawImage(img, this.offset.x, this.offset.y, scaledWidth, scaledHeight); // 放大
+                };
+            },
+            startDrag(event) {
+                this.dragging = true;
+                this.dragStart.x = event.offsetX - this.offset.x;
+                this.dragStart.y = event.offsetY - this.offset.y;
+                document.body.style.cursor = 'grabbing';
+            },
+            endDrag() {
+                this.dragging = false;
+                document.body.style.cursor = 'grab';
+            },
+            drag(event) {
+                if (this.dragging) {
+                    this.offset.x = event.offsetX - this.dragStart.x;
+                    this.offset.y = event.offsetY - this.dragStart.y;
+                    this.drawCanvas();
+                }
+            },
+            downloadImage() {
+                const canvas = this.$refs.canvas;
+                const link = document.createElement('a');
+                link.download = this.downloadName + '.' + this.imageFormat; // 使用选择的保存格式
+                link.href = canvas.toDataURL(this.imageFormat === 'png' ? 'image/png' : 'image/jpeg');
+                link.click();
+            }
+        },
+        mounted() {
+            console.log('组件已挂载');
+            this.changePreset();
+        },
+        watch: {
+            width: 'drawCanvas',
+            height: 'drawCanvas',
+            image: 'drawCanvas',
+            resizeValue: 'drawCanvas',
+        }
+    });
+
+    app.mount('#app');
+</script>
+<script src="./bootstrap.bundle.min.v5.3.5.js"></script>
+</body>
+</html>
